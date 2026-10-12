@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="container">
+        <h1>Student Registration System</h1>
+        <p class="subtitle">Register and manage student records</p>
+
+        <form id="studentForm">
+            <input type="text" id="name" placeholder="Student name" required>
+            <input type="email" id="email" placeholder="Email address" required>
+
+            <select id="course" required>
+                <option value="">Select course</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Mechanical">Mechanical</option>
+            </select>
+
+            <button type="submit">Register Student</button>
+        </form>
+
+        <p id="message" role="status"></p>
+
+        <h2>Registered Students</h2>
+        <button id="refreshButton" type="button" class="secondary">
+            Refresh Students
+        </button>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Course</th>
+                    </tr>
+                </thead>
+                <tbody id="studentList"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const form = document.getElementById("studentForm");
+        const message = document.getElementById("message");
+        const studentList = document.getElementById("studentList");
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const student = {
+                name: document.getElementById("name").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                course: document.getElementById("course").value
+            };
+
+            try {
+                const response = await fetch("/api/students", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(student)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || "Registration failed.");
+                }
+
+                message.textContent = result.message;
+                message.className = "success";
+                form.reset();
+                await loadStudents();
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = "error";
+            }
+        });
+
+        async function loadStudents() {
+            try {
+                const response = await fetch("/api/students");
+
+                if (!response.ok) {
+                    throw new Error("Unable to load student records.");
+                }
+
+                const students = await response.json();
+                studentList.replaceChildren();
+
+                students.forEach((student) => {
+                    const row = document.createElement("tr");
+
+                    [student.id, student.name, student.email, student.course]
+                        .forEach((value) => {
+                            const cell = document.createElement("td");
+                            cell.textContent = value;
+                            row.appendChild(cell);
+                        });
+
+                    studentList.appendChild(row);
+                });
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = "error";
+            }
+        }
+
+        document.getElementById("refreshButton")
+            .addEventListener("click", loadStudents);
+
+        loadStudents();
+    </script>
+</body>
+</html>
